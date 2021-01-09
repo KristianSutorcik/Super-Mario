@@ -1,102 +1,98 @@
 'use strict';
 
 var scene, camera, renderer, controls;
-var axes, plane, cube, sphere, cylinder, pyramid, donut;
+var axes, plane, cube, sphere, cylinder;
 
-var clock = new THREE.Clock();
+// var clock = new THREE.Clock();
 var keyboard = new THREEx.KeyboardState();
-
-var test;
 
 // var sheep;
 // var mouseDown;
 // var max = 0;
 
-function init(){
-    scene = new THREE.Scene();
+var jumpRaycaster;
 
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 10000);
-    camera.position.set(0,5,70);
+Physijs.scripts.worker = 'physijs_worker.js';
+Physijs.scripts.ammo = 'js/physijs/ammo.js';
 
-    renderer = new THREE.WebGLRenderer( { antialias: true } );
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    document.body.appendChild( renderer.domElement );
+function init() {
+    // scene = new THREE.Scene();
+    scene = new Physijs.Scene();
+    scene.setGravity(new THREE.Vector3(0, -30, 0));
 
-    controls = new THREE.OrbitControls( camera, renderer.domElement );
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 10000)
+    camera.position.set(0, 5, 700);
+
+    renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.setClearColor('rgb(255,255,255)');
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
 
     addObjects();
     addLights();
 
     // sheep = new Sheep();
     // scene.add(sheep.group);
-
-    // document.addEventListener('keydown', onMouseDown);
-    // document.addEventListener('keyup', onMouseUp);
-
 }
 
 function render(){
     update();
-
-    // sheep.jumpOnMouseDown();
-
+    scene.simulate();
     renderer.render( scene, camera );
-
-    TWEEN.update();
-
     requestAnimationFrame( render );
 }
 
+var canMoveToRight = false;
+var canMoveToLeft = false;
 var canJump = true;
+var speed = 100;
+var vector = new THREE.Vector3(0,0,0,);
 
 function update() {
-    console.log(cube.position);
-    var delta = clock.getDelta();
-    var moveDistance = 30 * delta;
 
     if ( keyboard.pressed("D") ){
-        cube.translateX(  moveDistance );
-        // sheep.group.position.x += 0.2;
+        canMoveToRight = true;
     }
     if ( keyboard.pressed("A") ){
-        cube.translateX( -moveDistance );
-        // sheep.group.position.x += -0.2;
+        canMoveToLeft = true;
     }
     if ( keyboard.pressed("W") && canJump){
+        cube.applyCentralImpulse(new THREE.Vector3(0,30,0,));
         canJump = false;
-        var startPosition = new THREE.Vector3().copy(cube.position);
-        var targetPostion = new THREE.Vector3(cube.position.x, cube.position.y + 10, 0);
-        test = new TWEEN.Tween(startPosition)
-            .to(targetPostion, 70)
-            // .easing(TWEEN.Easing.Quadratic.Out)
-            .onUpdate(function (){
-                cube.position.copy(startPosition);
-
-            })
-            // .onComplete(function (){
-            //     console.log(cube.position);
-            // })
-            .start();
-
     }
-    if ( keyboard.pressed("S") ){
-        cube.position.y = 4;
-    }
-    if (cube.position.y === 4) {
+    if ( keyboard.pressed("S")){
         canJump = true;
     }
+
+    if (canMoveToRight) {
+        cube.setLinearVelocity(vector.setX(speed));
+    }
+    // else if (!canMoveToRight) {
+    //     cube.setLinearVelocity(vector.setX(0));
+    // }
+    if (canMoveToLeft){
+        cube.setLinearVelocity(vector.setX(-speed));
+    }
+
+    canMoveToRight = false;
+    canMoveToLeft = false;
+
+    var velo = cube.getLinearVelocity();
+    console.log(velo.y);
 }
 
 function addObjects(){
     axes = new THREE.AxesHelper(50);
     scene.add(axes);
 
-    for (let i = 0; i < 20; i++){
+    for (let i = 0; i < 50; i++){
         var planeGeometry = new THREE.CubeGeometry(8, 8, 8);
         var planeTexture = new THREE.ImageUtils.loadTexture('texture/box.jpg');
         var planeMaterial = new THREE.MeshLambertMaterial( {map: planeTexture, wireframe: false } );
-        plane = new THREE.Mesh(planeGeometry, planeMaterial);
-        plane.position.set(i*8, -8, 0);
+        plane = new Physijs.BoxMesh(planeGeometry, planeMaterial, 0);
+        plane.position.set(i*8, -4, 0);
         scene.add(plane);
     }
 
@@ -107,36 +103,35 @@ function addObjects(){
     sphere.position.set(0, 0, 0);
     scene.add( sphere );
 
+    // var cubeGeometry = new THREE.CubeGeometry(8, 8, 8);
+    // var cubeMaterial = new THREE.MeshLambertMaterial( {color: 'rgb(255,0, 0)'} );
+    // cube = new Physijs.BoxMesh(cubeGeometry, cubeMaterial, 1);
+    // cube.position.set(0, 4, 0);
+    // scene.add(cube);
+    // cube.setAngularFactor(new THREE.Vector3(0, 0, 0));
+
     var cubeGeometry = new THREE.CubeGeometry(8, 8, 8);
-    var cubeMaterial = new THREE.MeshLambertMaterial( {color: 'rgb(255,0, 0)'} );
-    cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    // cube.position.set(-20, 4, 0);
+    var cubeMaterial = Physijs.createMaterial(
+        new THREE.MeshLambertMaterial( {color: 'rgb(255,0, 0)'} ),
+        100,
+        0
+    );
+    cube = new Physijs.BoxMesh(cubeGeometry, cubeMaterial, 1);
     cube.position.set(0, 4, 0);
     scene.add(cube);
+    cube.setAngularFactor(new THREE.Vector3(0, 0, 0));
 
-    var sphereGeometry = new THREE.SphereGeometry(4, 40, 40);
-    var sphereMaterial = new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} );
-    sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    sphere.position.set(-10, 4, 0);
-    scene.add(sphere);
+    // var sphereGeometry = new THREE.SphereGeometry(4, 40, 40);
+    // var sphereMaterial = new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} );
+    // sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    // sphere.position.set(-10, 4, 0);
+    // scene.add(sphere);
 
     var cylinderGeometry = new THREE.CylinderGeometry(4, 4, 8, 40);
     var cylinderMaterial = new THREE.MeshLambertMaterial( {color: 'rgb(0,0,255)'} );
     cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
     cylinder.position.set(-20, 4, 0);
     scene.add(cylinder);
-
-    var pyramidGeometry = new THREE.CylinderGeometry(0, 4, 8, 40);
-    var pyramidMaterial = new THREE.MeshLambertMaterial( {color: 'rgb(255,255,0)'} );
-    pyramid = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
-    pyramid.position.set(10, 4, 0);
-    scene.add(pyramid);
-
-    var donutGeometry = new THREE.TorusGeometry(3, 1.5, 40, 40);
-    var donutMaterial = new THREE.MeshLambertMaterial( {color: 'rgb(255,0,255)'} );
-    donut = new THREE.Mesh(donutGeometry, donutMaterial);
-    donut.position.set(20, 4, 0);
-    scene.add(donut);
 }
 
 function addLights() {
@@ -288,45 +283,7 @@ function addLights() {
 //         this.backLeftLeg.rotation.x = -this.frontLeftLeg.rotation.x;
 //         this.group.add(this.backLeftLeg);
 //     }
-//
-//     jump(speed) {
-//         this.vAngle += speed;
-//         // this.group.position.y = Math.sin(this.vAngle) + 1.38;
-//         var y = Math.sin(this.vAngle)*10 + 1.38;
-//         if (y <= 1.38) {
-//             y = 0.4;
-//             this.vAngle = 0;
-//         }
-//         this.group.position.y = y;
-//
-//         console.log("y = ", y);
-//
-//         const legRotation = Math.sin(this.vAngle) * Math.PI / 6 + 0.4;
-//
-//         this.frontRightLeg.rotation.z = legRotation;
-//         this.backRightLeg.rotation.z = legRotation;
-//         this.frontLeftLeg.rotation.z = -legRotation;
-//         this.backLeftLeg.rotation.z = -legRotation;
-//
-//         const earRotation = Math.sin(this.vAngle) * Math.PI / 3 + 1.5;
-//
-//         this.rightEar.rotation.z = earRotation;
-//         this.leftEar.rotation.z = -earRotation;
-//     }
-//
-//     jumpOnMouseDown() {
-//         if (mouseDown) {
-//             this.jump(0.02);
-//         } else {
-//             if (this.group.position.y <= 0.4) return;
-//             this.jump(0.02);
-//         }
-//     }
 // }
-
-
-
-
 
 init();
 render();
