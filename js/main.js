@@ -55,12 +55,6 @@ var vector = new THREE.Vector3(0,0,0,);
 
 function update() {
 
-    // var y = cube.position.y;
-    // if (y < 4) {
-    //     cube.position.y = 4;
-    //     cube.__dirtyPosition = true;
-    // }
-
     if ( keyboard.pressed("D" ) ){
         canMoveToRight = true;
     }
