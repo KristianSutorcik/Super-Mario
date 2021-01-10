@@ -1,18 +1,18 @@
 'use strict';
 
 var scene, camera, renderer, controls;
-var axes, plane, cube, backGround, cylinder;
+var plane, cube, backGround, cylinder;
 
 var keyboard = new THREEx.KeyboardState();
 
 Physijs.scripts.worker = 'physijs_worker.js';
 Physijs.scripts.ammo = 'js/physijs/ammo.js';
 
-var isTouchingGround = false;
-var cylinders = [];
+var isTouchingGround = true;
+var canMoveToRight = false;
+var canMoveToLeft = false;
 
 function init() {
-    // scene = new THREE.Scene();
     scene = new Physijs.Scene();
     scene.setGravity(new THREE.Vector3(0, -70, 0));
 
@@ -20,11 +20,10 @@ function init() {
     camera.position.set(0, 5, 170);
 
     renderer = new THREE.WebGLRenderer({antialias: true});
-    // renderer.setClearColor('rgb(255,255,255)');
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
 
     addObjects();
     addLights();
@@ -41,19 +40,20 @@ function init() {
 
 function render(){
     update();
-    // camera.lookAt(cube);
     scene.simulate();
     renderer.render( scene, camera );
     requestAnimationFrame( render );
 }
 
-var canMoveToRight = false;
-var canMoveToLeft = false;
-// var canJump = true;
 var speed = 50;
 var vector = new THREE.Vector3(0,0,0,);
 
 function update() {
+
+    if (cube.position.y < 4) {
+        cube.position.y = 4;
+        cube.__dirtyPosition = true;
+    }
 
     if ( keyboard.pressed("D" ) ){
         canMoveToRight = true;
@@ -97,11 +97,9 @@ function update() {
 }
 
 function addObjects(){
-    axes = new THREE.AxesHelper(50);
-    scene.add(axes);
 
     //background
-    var backgroundGeometry = new THREE.SphereGeometry(1100, 50, 50);
+    var backgroundGeometry = new THREE.SphereGeometry(1000, 50, 50);
     var backgroundTexture = new THREE.ImageUtils.loadTexture( 'texture/desert.jpg' );
     var backgroundMaterial = new THREE.MeshBasicMaterial( {map: backgroundTexture,
         transparent: true, side: THREE.BackSide} );
@@ -110,14 +108,16 @@ function addObjects(){
     scene.add( backGround );
 
     //invisible wall - left side
-    var planeGeometry = new THREE.CubeGeometry(8, 100, 8);
+    var planeGeometry = new THREE.PlaneGeometry( 8, 100, 1, 1);
     var planeMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {transparent: true, opacity: 0} ),
+        // new THREE.MeshLambertMaterial( {transparent: true, opacity: 0} ),
+        new THREE.MeshBasicMaterial( {color: 'rgb(0,0,255)'} ),
         0,
         0
     );
-    plane = new Physijs.BoxMesh(planeGeometry, planeMaterial, 0);
-    plane.position.set(-8, 50, 0);
+    plane = new Physijs.PlaneMesh(planeGeometry, planeMaterial, 0);
+    plane.position.set(-4, 50, 0);
+    plane.rotation.y = Math.PI / 2;
     scene.add(plane);
 
     //boxes - ground
@@ -143,11 +143,11 @@ function addObjects(){
     var cubeGeometry = new THREE.CubeGeometry(8, 8, 8);
     var cubeMaterial = Physijs.createMaterial(
         new THREE.MeshLambertMaterial( {color: 'rgb(255,0,0)'} ),
-        10,
+        5,
         1
     );
     cube = new Physijs.BoxMesh(cubeGeometry, cubeMaterial, 1);
-    cube.position.set(0, 4.1, 0);
+    cube.position.set(0, 4, 0);
     scene.add(cube);
     cube.setAngularFactor(new THREE.Vector3(0, 0, 0));
 
@@ -172,7 +172,6 @@ function addObjects(){
     cylinder.add(smallcylinder);
     scene.add(cylinder);
 
-    cylinders.push(cylinder);
 }
 
 function addLights() {
