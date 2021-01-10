@@ -21,6 +21,7 @@ function init() {
 
     renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMapType = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -107,17 +108,24 @@ function addObjects(){
     backGround.position.set(0, 0, 0);
     scene.add( backGround );
 
-    //invisible wall - left side
-    var planeGeometry = new THREE.PlaneGeometry( 8, 100, 1, 1);
+    //invisible walls - left, top
     var planeMaterial = Physijs.createMaterial(
         // new THREE.MeshLambertMaterial( {transparent: true, opacity: 0} ),
         new THREE.MeshBasicMaterial( {color: 'rgb(0,0,255)'} ),
         0,
         0
     );
+
+    var planeGeometry = new THREE.PlaneGeometry( 8, 100, 1, 1);
     plane = new Physijs.PlaneMesh(planeGeometry, planeMaterial, 0);
     plane.position.set(-4, 50, 0);
     plane.rotation.y = Math.PI / 2;
+    scene.add(plane);
+
+    var planeGeometry = new THREE.PlaneGeometry( 400, 8, 1, 1);
+    plane = new Physijs.PlaneMesh(planeGeometry, planeMaterial, 0);
+    plane.position.set(196, 100, 0);
+    plane.rotation.x = Math.PI / 2;
     scene.add(plane);
 
     //boxes - ground
@@ -175,14 +183,19 @@ function addObjects(){
 }
 
 function addLights() {
-    var ambientLight = new THREE.AmbientLight('rgb(255,255,255)');
-    ambientLight.intensity = 0.7;
-    scene.add(ambientLight);
+    // var ambientLight = new THREE.AmbientLight('rgb(255,255,255)');
+    //     // ambientLight.intensity = 0.4;
+    //     // scene.add(ambientLight);
 
     // var spotLight = new THREE.SpotLight();
     // spotLight.position.set(0,20,20);
     // spotLight.intensity = 1;
     // scene.add(spotLight);
+
+    var directionLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionLight.position.set(0,50,50);
+    directionLight.castShadow = true;
+    scene.add(directionLight);
 }
 
 init();
