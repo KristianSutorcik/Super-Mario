@@ -20,11 +20,11 @@ function init() {
     camera.position.set(0, 5, 170);
 
     renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.setClearColor('rgb(255,255,255)');
+    // renderer.setClearColor('rgb(255,255,255)');
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    // controls = new THREE.OrbitControls(camera, renderer.domElement);
 
     addObjects();
     addLights();
