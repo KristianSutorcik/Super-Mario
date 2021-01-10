@@ -1,7 +1,7 @@
 'use strict';
 
 var scene, camera, renderer, controls;
-var plane, cube, backGround, cylinder;
+var backGround, plane, cube, cylinder, enemy;
 
 var keyboard = new THREEx.KeyboardState();
 
@@ -11,6 +11,11 @@ Physijs.scripts.ammo = 'js/physijs/ammo.js';
 var isTouchingGround = true;
 var canMoveToRight = false;
 var canMoveToLeft = false;
+
+var speed = 50;
+var vector = new THREE.Vector3(0,0,0,);
+
+var enemySpeed = 20;
 
 function init() {
     scene = new Physijs.Scene();
@@ -30,12 +35,28 @@ function init() {
     addLights();
 
     cube.addEventListener('collision', function(other_object, velocity, rotation, contactNormal) {
-        console.log('collision');
-        console.log(contactNormal);
         if (contactNormal.y === -1) {
             isTouchingGround = true;
         }
+        if (other_object.name === 'enemy'){
+            console.log(contactNormal.y);
+            if (contactNormal.y  <= -0.8){
+                console.log('enemy is dead');
+                scene.remove(other_object);
+            }
+            // if (window.confirm('Game Over. Do you want to repeat?')){
+            //     window.open('index.html');
+            // }
+        }
     });
+
+    enemy.addEventListener('collision', function(other_object, velocity, rotation, contactNormal) {
+        if (contactNormal.x === -1 || contactNormal.x === 1) {
+            enemySpeed = enemySpeed * -1;
+        }
+    });
+
+
 
 }
 
@@ -45,9 +66,6 @@ function render(){
     renderer.render( scene, camera );
     requestAnimationFrame( render );
 }
-
-var speed = 50;
-var vector = new THREE.Vector3(0,0,0,);
 
 function update() {
 
@@ -93,6 +111,16 @@ function update() {
 
     camera.position.x = cube.position.x;
 
+    if (cube.position.x >= 200) {
+        if (window.confirm('Level Completed. Do you want to repeat?')){
+            window.open('index.html');
+        }
+    }
+
+    if (enemy.parent === scene){
+        enemy.setLinearVelocity(vector.setX(-enemySpeed));
+    }
+
     // console.log(cube.position.y);
     // console.log(cube.getLinearVelocity());
 }
@@ -118,7 +146,7 @@ function addObjects(){
 
     var planeGeometry = new THREE.PlaneGeometry( 8, 100, 1, 1);
     plane = new Physijs.PlaneMesh(planeGeometry, planeMaterial, 0);
-    plane.position.set(-4, 50, 0);
+    plane.position.set(-4.5, 50, 0);
     plane.rotation.y = Math.PI / 2;
     scene.add(plane);
 
@@ -132,7 +160,7 @@ function addObjects(){
     var planeGeometry = new THREE.CubeGeometry(8, 8, 8);
     var planeTexture = new THREE.ImageUtils.loadTexture('texture/box.jpg');
     var planeMaterial = new Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {map: planeTexture, wireframe: false } ),
+        new THREE.MeshLambertMaterial( {map: planeTexture } ),
         0,
         0
     );
@@ -159,7 +187,7 @@ function addObjects(){
     scene.add(cube);
     cube.setAngularFactor(new THREE.Vector3(0, 0, 0));
 
-    //obstacle
+    //obstacles
     var cylinderGeometry = new THREE.CylinderGeometry(4, 4, 16, 40);
     var cylinderMaterial = Physijs.createMaterial(
         new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
@@ -178,19 +206,48 @@ function addObjects(){
     var smallcylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
     smallcylinder.position.set(0,9,0);
     cylinder.add(smallcylinder);
+    cylinder.name = 'cylinder';
     scene.add(cylinder);
+
+    //obstacle
+    var cylinderGeometry = new THREE.CylinderGeometry(4, 4, 16, 40);
+    var cylinderMaterial = Physijs.createMaterial(
+        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
+        10,
+        0
+    );
+    cylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
+    cylinder.position.set(94,8, 0);
+
+    var cylinderGeometry = new THREE.CylinderGeometry(6, 6, 2, 40);
+    var cylinderMaterial = Physijs.createMaterial(
+        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
+        10,
+        0
+    );
+    var smallcylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
+    smallcylinder.position.set(0,9,0);
+    cylinder.add(smallcylinder);
+    cylinder.name = 'cylinder';
+    scene.add(cylinder);
+
+    //enemy
+    var enemyGeometry = new THREE.SphereGeometry(4,10,10);
+    var enemyTexture = new THREE.ImageUtils.loadTexture('texture/carbon.png');
+    var enemyMaterial = Physijs.createMaterial(
+        new THREE.MeshLambertMaterial( {map: enemyTexture} ),
+        10,
+        0
+    );
+    enemy = new Physijs.SphereMesh(enemyGeometry, enemyMaterial, 10);
+    enemy.position.set(85, 4, 0);
+    enemy.name = 'enemy';
+    scene.add(enemy);
+    enemy.setAngularFactor(new THREE.Vector3(0, 0, 0));
 
 }
 
 function addLights() {
-    // var ambientLight = new THREE.AmbientLight('rgb(255,255,255)');
-    //     // ambientLight.intensity = 0.4;
-    //     // scene.add(ambientLight);
-
-    // var spotLight = new THREE.SpotLight();
-    // spotLight.position.set(0,20,20);
-    // spotLight.intensity = 1;
-    // scene.add(spotLight);
 
     var directionLight = new THREE.DirectionalLight(0xffffff, 1);
     directionLight.position.set(0,50,50);
