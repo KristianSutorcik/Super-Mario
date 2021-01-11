@@ -1,7 +1,7 @@
 'use strict';
 
 var scene, camera, renderer, controls;
-var backGround, plane, cube, cylinder, enemy;
+var backGround, plane, cube, cylinder, enemy, bonus;
 
 var keyboard = new THREEx.KeyboardState();
 
@@ -15,14 +15,19 @@ var canMoveToLeft = false;
 var speed = 50;
 var vector = new THREE.Vector3(0,0,0,);
 
-var enemySpeed = 20;
+var enemySpeed = -30;
+
+var clock = new THREE.Clock(false);
+var textTime = "00:00:00";
+var score = 0;
 
 function init() {
     scene = new Physijs.Scene();
     scene.setGravity(new THREE.Vector3(0, -70, 0));
 
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 10000)
-    camera.position.set(0, 5, 170);
+    camera.position.set(0, 35, 170);
+    camera.rotation.y = -0.5;
 
     renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -39,15 +44,17 @@ function init() {
             isTouchingGround = true;
         }
         if (other_object.name === 'enemy'){
-            console.log(contactNormal.y);
             if (contactNormal.y  <= -0.8){
-                console.log('enemy is dead');
                 scene.remove(other_object);
+                score += 500;
+            } else if (window.confirm('Game Over. Do you want to repeat?')){
+                window.open('index.html');
             }
-            // if (window.confirm('Game Over. Do you want to repeat?')){
-            //     window.open('index.html');
-            // }
         }
+        if (other_object.name === 'bonus') {
+            score += 100;
+            scene.remove(other_object);
+        };
     });
 
     enemy.addEventListener('collision', function(other_object, velocity, rotation, contactNormal) {
@@ -56,7 +63,8 @@ function init() {
         }
     });
 
-
+    clock.start();
+    document.getElementById("info").innerHTML = "Kristián Sutorčik - Počítačová grafika 2020/2021";
 
 }
 
@@ -69,6 +77,17 @@ function render(){
 
 function update() {
 
+    if (clock.running){
+        var timeInSeconds = clock.getElapsedTime();
+        setTextTime(timeInSeconds);
+    }
+
+    var firstLine = "Time: " + textTime;
+    var secondLine = "Score: " + score;
+    var thirdLine = "Level 1";
+    document.getElementById("stats").innerHTML = firstLine + "<br>" +
+        secondLine + "<br>" + thirdLine;
+
     if (cube.position.y < 4) {
         cube.position.y = 4;
         cube.__dirtyPosition = true;
@@ -77,17 +96,12 @@ function update() {
     if ( keyboard.pressed("D" ) ){
         canMoveToRight = true;
     }
-
     if ( keyboard.pressed("A" ) ){
         canMoveToLeft = true;
     }
-
     if ( keyboard.pressed("W") && isTouchingGround){
         cube.applyCentralImpulse(new THREE.Vector3(0,60,0,));
         isTouchingGround = false;
-        // if (cylinder.parent === scene) {
-        //     scene.remove(cylinder);
-        // }
     }
 
     if (canMoveToRight) {
@@ -111,18 +125,16 @@ function update() {
 
     camera.position.x = cube.position.x;
 
-    if (cube.position.x >= 200) {
+    if (cube.position.x >= 350) {
+        clock.stop();
         if (window.confirm('Level Completed. Do you want to repeat?')){
             window.open('index.html');
         }
     }
 
     if (enemy.parent === scene){
-        enemy.setLinearVelocity(vector.setX(-enemySpeed));
+        enemy.setLinearVelocity(vector.setX(enemySpeed));
     }
-
-    // console.log(cube.position.y);
-    // console.log(cube.getLinearVelocity());
 }
 
 function addObjects(){
@@ -144,15 +156,15 @@ function addObjects(){
         0
     );
 
-    var planeGeometry = new THREE.PlaneGeometry( 8, 100, 1, 1);
+    var planeGeometry = new THREE.PlaneGeometry( 8, 70, 1, 1);
     plane = new Physijs.PlaneMesh(planeGeometry, planeMaterial, 0);
-    plane.position.set(-4.5, 50, 0);
+    plane.position.set(-4.5, 35, 0);
     plane.rotation.y = Math.PI / 2;
     scene.add(plane);
 
     var planeGeometry = new THREE.PlaneGeometry( 400, 8, 1, 1);
     plane = new Physijs.PlaneMesh(planeGeometry, planeMaterial, 0);
-    plane.position.set(196, 100, 0);
+    plane.position.set(196, 70, 0);
     plane.rotation.x = Math.PI / 2;
     scene.add(plane);
 
@@ -187,7 +199,20 @@ function addObjects(){
     scene.add(cube);
     cube.setAngularFactor(new THREE.Vector3(0, 0, 0));
 
-    //obstacles
+    //bonus
+    var bonusGeometry = new THREE.CubeGeometry(8, 8, 8);
+    var bonusTexture = new THREE.ImageUtils.loadTexture('texture/bonus.png');
+    var bonusMaterial = new Physijs.createMaterial(
+        new THREE.MeshLambertMaterial( {map: bonusTexture } ),
+        0,
+        0
+    );
+    bonus = new Physijs.BoxMesh(bonusGeometry, bonusMaterial, 0);
+    bonus.position.set(150, 30, 0);
+    bonus.name = 'bonus';
+    scene.add(bonus);
+
+    //obstacle
     var cylinderGeometry = new THREE.CylinderGeometry(4, 4, 16, 40);
     var cylinderMaterial = Physijs.createMaterial(
         new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
@@ -231,6 +256,50 @@ function addObjects(){
     cylinder.name = 'cylinder';
     scene.add(cylinder);
 
+    //obstacle
+    var cylinderGeometry = new THREE.CylinderGeometry(4, 4, 16, 40);
+    var cylinderMaterial = Physijs.createMaterial(
+        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
+        10,
+        0
+    );
+    cylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
+    cylinder.position.set(200,8, 0);
+
+    var cylinderGeometry = new THREE.CylinderGeometry(6, 6, 2, 40);
+    var cylinderMaterial = Physijs.createMaterial(
+        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
+        10,
+        0
+    );
+    var smallcylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
+    smallcylinder.position.set(0,9,0);
+    cylinder.add(smallcylinder);
+    cylinder.name = 'cylinder';
+    scene.add(cylinder);
+
+    //obstacle
+    var cylinderGeometry = new THREE.CylinderGeometry(4, 4, 16, 40);
+    var cylinderMaterial = Physijs.createMaterial(
+        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
+        10,
+        0
+    );
+    cylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
+    cylinder.position.set(300,8, 0);
+
+    var cylinderGeometry = new THREE.CylinderGeometry(6, 6, 2, 40);
+    var cylinderMaterial = Physijs.createMaterial(
+        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
+        10,
+        0
+    );
+    var smallcylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
+    smallcylinder.position.set(0,9,0);
+    cylinder.add(smallcylinder);
+    cylinder.name = 'cylinder';
+    scene.add(cylinder);
+
     //enemy
     var enemyGeometry = new THREE.SphereGeometry(4,10,10);
     var enemyTexture = new THREE.ImageUtils.loadTexture('texture/carbon.png');
@@ -253,6 +322,20 @@ function addLights() {
     directionLight.position.set(0,50,50);
     directionLight.castShadow = true;
     scene.add(directionLight);
+}
+
+function setTextTime(timeInSeconds){
+    timeInSeconds = Number(timeInSeconds);
+    var m = Math.floor(timeInSeconds % 3600 / 60);
+    var s = Math.floor(timeInSeconds % 3600 % 60);
+
+    if (m < 10) {
+        m = "0"+m;
+    }
+    if (s < 10) {
+        s = "0"+s;
+    }
+    textTime = m + ":" + s;
 }
 
 init();

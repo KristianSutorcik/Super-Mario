@@ -9,9 +9,32 @@
         <script src="js/threex/threex.keyboardstate.js"></script>
         <script src="js/physijs/physi.js"></script>
 
+        <style>
+            #stats {
+                position: absolute;
+                top: 10px;
+                width: 100%;
+                text-align: center;
+                font-size: 60px;
+                z-index: 100;
+                display:block;
+            }
+            #info {
+                position: absolute;
+                bottom: 10px;
+                width: 100%;
+                text-align: center;
+                font-size: 60px;
+                z-index: 100;
+                display:block;
+            }
+        </style>
+
     </head>
     <body>
         <div id="canvas">
+            <div id="stats"></div>
+            <div id="info"></div>
             <script src="js/main.js"></script>
         </div>
     </body>
