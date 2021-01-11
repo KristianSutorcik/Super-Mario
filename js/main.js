@@ -12,7 +12,7 @@ var isTouchingGround = true;
 var canMoveToRight = false;
 var canMoveToLeft = false;
 
-var speed = 50;
+var speed = 30;
 var vector = new THREE.Vector3(0,0,0,);
 
 var enemySpeed = -30;
@@ -103,7 +103,7 @@ function update() {
         isTouchingGround = false;
     }
 
-    if (canMoveToRight) {
+    if (canMoveToRight && cube.getLinearVelocity().x < 20) {
         if (isTouchingGround) {
             cube.setLinearVelocity(vector.setX(speed));
         } else {
@@ -111,7 +111,7 @@ function update() {
         }
     }
 
-    if (canMoveToLeft){
+    if (canMoveToLeft  && cube.getLinearVelocity().x > -20){
         if (isTouchingGround) {
             cube.setLinearVelocity(vector.setX(-speed));
         } else {
@@ -134,6 +134,7 @@ function update() {
     if (enemy.parent === scene){
         enemy.setLinearVelocity(vector.setX(enemySpeed));
     }
+
 }
 
 function addObjects(){
