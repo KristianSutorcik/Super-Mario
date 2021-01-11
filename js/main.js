@@ -23,7 +23,7 @@ var score = 0;
 
 function init() {
     scene = new Physijs.Scene();
-    scene.setGravity(new THREE.Vector3(0, -70, 0));
+    scene.setGravity(new THREE.Vector3(0, -80, 0));
 
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 10000)
     camera.position.set(0, 35, 170);
@@ -43,6 +43,7 @@ function init() {
         if (contactNormal.y === -1) {
             isTouchingGround = true;
         }
+
         if (other_object.name === 'enemy'){
             if (contactNormal.y  <= -0.8){
                 scene.remove(other_object);
@@ -51,6 +52,7 @@ function init() {
                 window.open('index.html');
             }
         }
+
         if (other_object.name === 'bonus') {
             score += 100;
             scene.remove(other_object);
@@ -58,6 +60,7 @@ function init() {
     });
 
     enemy.addEventListener('collision', function(other_object, velocity, rotation, contactNormal) {
+        console.log(contactNormal);
         if (contactNormal.x === -1 || contactNormal.x === 1) {
             enemySpeed = enemySpeed * -1;
         }
@@ -196,7 +199,7 @@ function addObjects(){
         1
     );
     cube = new Physijs.BoxMesh(cubeGeometry, cubeMaterial, 1);
-    cube.position.set(0, 4, 0);
+    cube.position.set(0, 4.5, 0);
     scene.add(cube);
     cube.setAngularFactor(new THREE.Vector3(0, 0, 0));
 
