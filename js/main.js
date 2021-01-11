@@ -34,7 +34,7 @@ function init() {
     renderer.shadowMapType = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
 
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    // controls = new THREE.OrbitControls(camera, renderer.domElement);
 
     addObjects();
     addLights();
@@ -47,14 +47,14 @@ function init() {
             if (contactNormal.y  <= -0.8){
                 scene.remove(other_object);
                 score += 500;
-            } else if (window.confirm('Game Over. Do you want to repeat?')){
+            } else if (window.confirm('Koniec hry! Chcete opakovať level?')){
                 window.open('index.html');
             }
         }
         if (other_object.name === 'bonus') {
             score += 100;
             scene.remove(other_object);
-        };
+        }
     });
 
     enemy.addEventListener('collision', function(other_object, velocity, rotation, contactNormal) {
@@ -64,8 +64,6 @@ function init() {
     });
 
     clock.start();
-    document.getElementById("info").innerHTML = "Kristián Sutorčik - Počítačová grafika 2020/2021";
-
 }
 
 function render(){
@@ -82,9 +80,9 @@ function update() {
         setTextTime(timeInSeconds);
     }
 
-    var firstLine = "Time: " + textTime;
-    var secondLine = "Score: " + score;
-    var thirdLine = "Level 1";
+    var firstLine = "Čas: " + textTime;
+    var secondLine = "Skóre: " + score;
+    var thirdLine = "Level: 1";
     document.getElementById("stats").innerHTML = firstLine + "<br>" +
         secondLine + "<br>" + thirdLine;
 
@@ -123,11 +121,11 @@ function update() {
     canMoveToRight = false;
     canMoveToLeft = false;
 
-    camera.position.x = cube.position.x;
+    camera.position.x = cube.position.x-20;
 
     if (cube.position.x >= 350) {
         clock.stop();
-        if (window.confirm('Level Completed. Do you want to repeat?')){
+        if (window.confirm('Gratulujem, level dokončený. Chcete hrať znova?')){
             window.open('index.html');
         }
     }
@@ -150,8 +148,7 @@ function addObjects(){
 
     //invisible walls - left, top
     var planeMaterial = Physijs.createMaterial(
-        // new THREE.MeshLambertMaterial( {transparent: true, opacity: 0} ),
-        new THREE.MeshBasicMaterial( {color: 'rgb(0,0,255)'} ),
+        new THREE.MeshBasicMaterial( {transparent: true, opacity: 0, side: THREE.BackSide} ),
         0,
         0
     );
@@ -160,12 +157,16 @@ function addObjects(){
     plane = new Physijs.PlaneMesh(planeGeometry, planeMaterial, 0);
     plane.position.set(-4.5, 35, 0);
     plane.rotation.y = Math.PI / 2;
+    plane.castShadow = false;
+    plane.receiveShadow = false;
     scene.add(plane);
 
     var planeGeometry = new THREE.PlaneGeometry( 400, 8, 1, 1);
     plane = new Physijs.PlaneMesh(planeGeometry, planeMaterial, 0);
     plane.position.set(196, 70, 0);
     plane.rotation.x = Math.PI / 2;
+    plane.castShadow = false;
+    plane.receiveShadow = false;
     scene.add(plane);
 
     //boxes - ground
@@ -173,7 +174,7 @@ function addObjects(){
     var planeTexture = new THREE.ImageUtils.loadTexture('texture/box.jpg');
     var planeMaterial = new Physijs.createMaterial(
         new THREE.MeshLambertMaterial( {map: planeTexture } ),
-        0,
+        10,
         0
     );
     for (let i = 0; i < 50; i++){
@@ -191,7 +192,7 @@ function addObjects(){
     var cubeGeometry = new THREE.CubeGeometry(8, 8, 8);
     var cubeMaterial = Physijs.createMaterial(
         new THREE.MeshLambertMaterial( {color: 'rgb(255,0,0)'} ),
-        5,
+        10,
         1
     );
     cube = new Physijs.BoxMesh(cubeGeometry, cubeMaterial, 1);
@@ -309,10 +310,29 @@ function addObjects(){
         0
     );
     enemy = new Physijs.SphereMesh(enemyGeometry, enemyMaterial, 10);
-    enemy.position.set(85, 4, 0);
+    enemy.position.set(55, 4, 0);
     enemy.name = 'enemy';
     scene.add(enemy);
     enemy.setAngularFactor(new THREE.Vector3(0, 0, 0));
+
+    //text - finish
+    var loader = new THREE.FontLoader();
+    loader.load( 'https://threejs.org/examples/fonts/droid/droid_sans_regular.typeface.json', function ( font ) {
+        var geometry = new THREE.TextGeometry( 'Koniec levulu', {
+            font: font,
+            size: 5,
+            height: 0.5,
+            curveSegments: 12,
+            bevelThickness: 1,
+            bevelSize: 1,
+            bevelEnabled: true
+        } );
+        geometry.center();
+        var material = new THREE.MeshNormalMaterial({color: 'rgb(255,255,255)'});
+        var mesh = new THREE.Mesh( geometry, material );
+        mesh.position.set(350,30,0);
+        scene.add( mesh );
+    } );
 
 }
 
@@ -320,7 +340,7 @@ function addLights() {
 
     var directionLight = new THREE.DirectionalLight(0xffffff, 1);
     directionLight.position.set(0,50,50);
-    directionLight.castShadow = true;
+    directionLight.castShadow = false;
     scene.add(directionLight);
 }
 
