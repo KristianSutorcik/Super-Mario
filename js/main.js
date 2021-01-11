@@ -319,7 +319,7 @@ function addObjects(){
     //text - finish
     var loader = new THREE.FontLoader();
     loader.load( 'https://threejs.org/examples/fonts/droid/droid_sans_regular.typeface.json', function ( font ) {
-        var geometry = new THREE.TextGeometry( 'Koniec levulu', {
+        var geometry = new THREE.TextGeometry( 'Koniec levelu', {
             font: font,
             size: 5,
             height: 0.5,
