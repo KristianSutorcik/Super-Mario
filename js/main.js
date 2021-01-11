@@ -31,7 +31,6 @@ function init() {
 
     renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMapType = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
 
     // controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -60,8 +59,7 @@ function init() {
     });
 
     enemy.addEventListener('collision', function(other_object, velocity, rotation, contactNormal) {
-        console.log(contactNormal);
-        if (contactNormal.x === -1 || contactNormal.x === 1) {
+        if (other_object.name === 'cylinder') {
             enemySpeed = enemySpeed * -1;
         }
     });
@@ -313,7 +311,7 @@ function addObjects(){
         0
     );
     enemy = new Physijs.SphereMesh(enemyGeometry, enemyMaterial, 10);
-    enemy.position.set(55, 4, 0);
+    enemy.position.set(80, 4.2, 0);
     enemy.name = 'enemy';
     scene.add(enemy);
     enemy.setAngularFactor(new THREE.Vector3(0, 0, 0));
