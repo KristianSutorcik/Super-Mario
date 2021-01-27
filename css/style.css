@@ -1,0 +1,27 @@
+#stats {
+    position: absolute;
+    top: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 1vw;
+    z-index: 100;
+    display:block;
+}
+#howToPlay{
+    position: absolute;
+    bottom: 5vw;
+    width: 100%;
+    text-align: center;
+    font-size: 1vw;
+    z-index: 100;
+    display:block;
+}
+#info {
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 1vw;
+    z-index: 100;
+    display:block;
+}

@@ -1,7 +1,7 @@
 'use strict';
 
 var scene, camera, renderer, controls;
-var backGround, plane, cube, cylinder, enemy, bonus;
+var backGround, plane, mario, cylinder, enemy, bonus;
 
 var keyboard = new THREEx.KeyboardState();
 
@@ -35,10 +35,12 @@ function init() {
 
     // controls = new THREE.OrbitControls(camera, renderer.domElement);
 
+    buildLevel(level1);
+
     addObjects();
     addLights();
 
-    cube.addEventListener('collision', function(other_object, velocity, rotation, contactNormal) {
+    mario.addEventListener('collision', function(other_object, velocity, rotation, contactNormal) {
         if (contactNormal.y === -1) {
             isTouchingGround = true;
         }
@@ -55,6 +57,13 @@ function init() {
         if (other_object.name === 'bonus') {
             score += 100;
             scene.remove(other_object);
+        }
+
+        if (other_object.name === 'flag') {
+            clock.stop();
+            if (window.confirm('Gratulujem, level dokončený. Chcete hrať znova?')){
+                window.open('index.html');
+            }
         }
     });
 
@@ -84,12 +93,14 @@ function update() {
     var firstLine = "Čas: " + textTime;
     var secondLine = "Skóre: " + score;
     var thirdLine = "Level: 1";
-    document.getElementById("stats").innerHTML = firstLine + "<br>" +
-        secondLine + "<br>" + thirdLine;
+    document.getElementById("stats").innerHTML =
+        firstLine + "<br>" +
+        secondLine + "<br>" +
+        thirdLine;
 
-    if (cube.position.y < 4) {
-        cube.position.y = 4;
-        cube.__dirtyPosition = true;
+    if (mario.position.y < 4) {
+        mario.position.y = 4;
+        mario.__dirtyPosition = true;
     }
 
     if ( keyboard.pressed("D" ) ){
@@ -99,37 +110,30 @@ function update() {
         canMoveToLeft = true;
     }
     if ( keyboard.pressed("W") && isTouchingGround){
-        cube.applyCentralImpulse(new THREE.Vector3(0,60,0,));
+        mario.applyCentralImpulse(new THREE.Vector3(0,60,0,));
         isTouchingGround = false;
     }
 
-    if (canMoveToRight && cube.getLinearVelocity().x < 20) {
+    if (canMoveToRight && mario.getLinearVelocity().x < 20) {
         if (isTouchingGround) {
-            cube.setLinearVelocity(vector.setX(speed));
+            mario.setLinearVelocity(vector.setX(speed));
         } else {
-            cube.applyCentralImpulse(new THREE.Vector3(0.2,0,0,));
+            mario.applyCentralImpulse(new THREE.Vector3(0.2,0,0,));
         }
     }
 
-    if (canMoveToLeft  && cube.getLinearVelocity().x > -20){
+    if (canMoveToLeft  && mario.getLinearVelocity().x > -20){
         if (isTouchingGround) {
-            cube.setLinearVelocity(vector.setX(-speed));
+            mario.setLinearVelocity(vector.setX(-speed));
         } else {
-            cube.applyCentralImpulse(new THREE.Vector3(-0.2,0,0,));
+            mario.applyCentralImpulse(new THREE.Vector3(-0.2,0,0,));
         }
     }
 
     canMoveToRight = false;
     canMoveToLeft = false;
 
-    camera.position.x = cube.position.x-20;
-
-    if (cube.position.x >= 350) {
-        clock.stop();
-        if (window.confirm('Gratulujem, level dokončený. Chcete hrať znova?')){
-            window.open('index.html');
-        }
-    }
+    camera.position.x = mario.position.x-20;
 
     if (enemy.parent === scene){
         enemy.setLinearVelocity(vector.setX(enemySpeed));
@@ -172,11 +176,11 @@ function addObjects(){
     scene.add(plane);
 
     //boxes - ground
-    var planeGeometry = new THREE.CubeGeometry(8, 8, 8);
+    var planeGeometry = new THREE.BoxGeometry(8, 8, 8);
     var planeTexture = new THREE.ImageUtils.loadTexture('texture/box.jpg');
     var planeMaterial = new Physijs.createMaterial(
         new THREE.MeshLambertMaterial( {map: planeTexture } ),
-        10,
+        5,
         0
     );
     for (let i = 0; i < 50; i++){
@@ -190,20 +194,8 @@ function addObjects(){
         scene.add(plane);
     }
 
-    //player - controllable object
-    var cubeGeometry = new THREE.CubeGeometry(8, 8, 8);
-    var cubeMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {color: 'rgb(255,0,0)'} ),
-        10,
-        1
-    );
-    cube = new Physijs.BoxMesh(cubeGeometry, cubeMaterial, 1);
-    cube.position.set(0, 4.5, 0);
-    scene.add(cube);
-    cube.setAngularFactor(new THREE.Vector3(0, 0, 0));
-
     //bonus
-    var bonusGeometry = new THREE.CubeGeometry(8, 8, 8);
+    var bonusGeometry = new THREE.BoxGeometry(8, 8, 8);
     var bonusTexture = new THREE.ImageUtils.loadTexture('texture/bonus.png');
     var bonusMaterial = new Physijs.createMaterial(
         new THREE.MeshLambertMaterial( {map: bonusTexture } ),
@@ -303,38 +295,24 @@ function addObjects(){
     cylinder.name = 'cylinder';
     scene.add(cylinder);
 
-    //enemy
-    var enemyGeometry = new THREE.SphereGeometry(4,10,10);
-    var enemyTexture = new THREE.ImageUtils.loadTexture('texture/carbon.png');
-    var enemyMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {map: enemyTexture} ),
-        10,
-        0
-    );
-    enemy = new Physijs.SphereMesh(enemyGeometry, enemyMaterial, 10);
-    enemy.position.set(80, 4.2, 0);
-    enemy.name = 'enemy';
-    scene.add(enemy);
-    enemy.setAngularFactor(new THREE.Vector3(0, 0, 0));
-
-    //text - finish
-    var loader = new THREE.FontLoader();
-    loader.load( 'https://threejs.org/examples/fonts/droid/droid_sans_regular.typeface.json', function ( font ) {
-        var geometry = new THREE.TextGeometry( 'Koniec levelu', {
-            font: font,
-            size: 5,
-            height: 0.5,
-            curveSegments: 12,
-            bevelThickness: 1,
-            bevelSize: 1,
-            bevelEnabled: true
-        } );
-        geometry.center();
-        var material = new THREE.MeshNormalMaterial({color: 'rgb(255,255,255)'});
-        var mesh = new THREE.Mesh( geometry, material );
-        mesh.position.set(350,30,0);
-        scene.add( mesh );
-    } );
+    // //text - finish
+    // var loader = new THREE.FontLoader();
+    // loader.load( 'https://threejs.org/examples/fonts/droid/droid_sans_regular.typeface.json', function ( font ) {
+    //     var geometry = new THREE.TextGeometry( 'Koniec levelu', {
+    //         font: font,
+    //         size: 5,
+    //         height: 0.5,
+    //         curveSegments: 12,
+    //         bevelThickness: 1,
+    //         bevelSize: 1,
+    //         bevelEnabled: true
+    //     } );
+    //     geometry.center();
+    //     var material = new THREE.MeshNormalMaterial({color: 'rgb(255,255,255)'});
+    //     var mesh = new THREE.Mesh( geometry, material );
+    //     mesh.position.set(350,30,0);
+    //     scene.add( mesh );
+    // } );
 
 }
 
