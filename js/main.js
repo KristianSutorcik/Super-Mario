@@ -1,7 +1,7 @@
 "use strict";
 
 var scene, camera, renderer, controls;
-var background, ground, wall, mario, bonus, pipeTop, pipe, enemy, platform;
+var background, ground, wall, mario, bonus, pipeTop, pipe, enemy, platform, scoreObject;
 var enemyList = [];
 
 var keyboard = new THREEx.KeyboardState();
@@ -40,21 +40,46 @@ function init() {
     //controls = new THREE.OrbitControls(camera, renderer.domElement);
 
     buildLevel(level1);
+
     addLights();
 
-    for(let i=0; i < enemyList.length; i++){
-        enemyList[i].setLinearVelocity(vector.setX(enemySpeed));
-    }
+    addEventListeners();
 
+    enemyList.forEach(function (e){
+        e.setLinearVelocity(vector.setX(enemySpeed));
+    });
+
+    clock.start();
+}
+
+function render(){
+    updateScene();
+    scene.simulate();
+    renderer.render( scene, camera );
+    requestAnimationFrame( render );
+}
+
+function updateScene() {
+    updateLevelStats();
+    movementControls();
+    movement();
+    correctMariosPositionY();
+    camera.position.x = mario.position.x-20;
+}
+
+function addEventListeners(){
     mario.addEventListener("collision", function(other_object, velocity, rotation, contactNormal) {
         if (contactNormal.y === -1) {
             isTouchingGround = true;
+            scene.remove( scoreObject );
         }
 
         if (other_object.name === "enemy"){
-            if (contactNormal.y  <= -0.7){
+            if (contactNormal.y <= -0.7){
                 scene.remove(other_object);
-                score += 500;
+                score += 100;
+                scoreObject.position.set(mario.position.x, mario.position.y+5, 0);
+                scene.add(scoreObject);
             } else if (window.confirm("Koniec hry! Chcete opakovať level?")){
                 location.reload();
             }
@@ -63,6 +88,8 @@ function init() {
         if (other_object.name === "bonus") {
             score += 100;
             scene.remove(other_object);
+            scoreObject.position.set(mario.position.x, mario.position.y+5, 0);
+            scene.add(scoreObject);
         }
 
         if (other_object.name === "finish") {
@@ -80,26 +107,28 @@ function init() {
             }
         });
     }
-
-    clock.start();
 }
 
-function render(){
-    updateScene();
-    scene.simulate();
-    renderer.render( scene, camera );
-    requestAnimationFrame( render );
+function addLights() {
+    let directionLight = new THREE.DirectionalLight('rgb(255,255,255)', 0.5);
+    directionLight.position.set(0,50,50);
+    directionLight.castShadow = false;
+    scene.add(directionLight);
+
+    let directionLight2 = new THREE.DirectionalLight('rgb(255,255,255)', 0.5);
+    directionLight2.position.set(-50,50,50);
+    directionLight2.castShadow = false;
+    scene.add(directionLight2);
 }
 
-function updateScene() {
-
-    for(let i=0; i < enemyList.length; i++){
-        console.log(enemyList[i].getLinearVelocity());
+function correctMariosPositionY(){
+    if (mario.position.y < 4) {
+        mario.position.y = 4;
+        mario.__dirtyPosition = true;
     }
+}
 
-    updateLevelStats();
-    correctMariosPositionY();
-
+function movementControls(){
     if ( keyboard.pressed("D" ) ){
         canMoveToRight = true;
     }
@@ -107,10 +136,15 @@ function updateScene() {
         canMoveToLeft = true;
     }
     if ( keyboard.pressed("W") && isTouchingGround){
-        mario.applyCentralImpulse(new THREE.Vector3(0,marioJumpIntensity,0,));
+        mario.applyCentralImpulse(new THREE.Vector3(0,marioJumpIntensity,0));
         isTouchingGround = false;
     }
+    if ( keyboard.pressed("R" ) ){
+        location.reload();
+    }
+}
 
+function movement(){
     if (canMoveToRight && mario.getLinearVelocity().x < marioMaxVelocity) {
         if (isTouchingGround) {
             mario.setLinearVelocity(vector.setX(marioSpeed));
@@ -129,22 +163,6 @@ function updateScene() {
 
     canMoveToRight = false;
     canMoveToLeft = false;
-
-    camera.position.x = mario.position.x-20;
-}
-
-function addLights() {
-    let directionLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionLight.position.set(0,50,50);
-    directionLight.castShadow = false;
-    scene.add(directionLight);
-}
-
-function correctMariosPositionY(){
-    if (mario.position.y < 4) {
-        mario.position.y = 4;
-        mario.__dirtyPosition = true;
-    }
 }
 
 function updateLevelStats(){
@@ -159,13 +177,12 @@ function updateLevelStats(){
         textTime = m + ":" + s;
     }
 
-    let firstLine = "Čas: " + textTime;
-    let secondLine = "Skóre: " + score;
-    let thirdLine = "Level: 1";
-    document.getElementById("stats").innerHTML =
-        firstLine + "<br>" +
-        secondLine + "<br>" +
-        thirdLine;
+    let levelText = "Level <br> 1";
+    let scoreText = "Skóre " + "<br>" + score;
+    let timeText = "Čas " + "<br>" + textTime;
+    document.getElementById("level").innerHTML = levelText;
+    document.getElementById("score").innerHTML = scoreText;
+    document.getElementById("time").innerHTML = timeText;
 }
 
 init();

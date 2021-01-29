@@ -1,26 +1,14 @@
 'use strict';
 
-var level1 = [
-    [length, 320],
-    ["pipe", 20, 16],
-    ["pipe", 100, 36],
-    ["pipe", 180, 16],
-    ["pipe", 250, 16],
-    ["bonus", 150, 30],
-    ["bonus", 150, 60],
-    ["enemy", 50],
-    ["enemy", 130],
-    ["platform", 30, 35, 48]
-]
-
 var levelLength;
-
 var groundFriction = 1;
-
 var bonusGeometry, bonusTexture, bonusMaterial,
     pipeMaterial, pipeGeometry, pipeTopGeometry,
     enemyGeometry, enemyTexture, enemyMaterial,
-    platformGeometry, platformTexture, platformMaterial;
+    platformGeometry, platformTexture, platformMaterial,
+    scoreObjectGeometry, scoreObjectMaterial;
+
+var loader = new THREE.FontLoader();
 
 function buildLevel(level){
 
@@ -67,11 +55,24 @@ function createGeometriesAndMaterials(){
     enemyGeometry = new THREE.SphereGeometry(4,10,10);
     enemyTexture = new THREE.ImageUtils.loadTexture("texture/carbon.png");
     enemyMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {map: enemyTexture} ), 0, 0);
+        new THREE.MeshPhongMaterial( {map: enemyTexture} ), 0, 0);
 
     platformTexture = new THREE.ImageUtils.loadTexture("texture/box.jpg");
     platformMaterial = new Physijs.createMaterial(
         new THREE.MeshLambertMaterial( {map: platformTexture } ), groundFriction, 0);
+
+    loader.load( 'https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function ( font ) {
+        scoreObjectGeometry = new THREE.TextGeometry( '+100', {
+            font: font,
+            size: 4,
+            height: 0.5,
+            curveSegments: 5,
+        } );
+        scoreObjectGeometry.center();
+        scoreObjectMaterial = new THREE.MeshNormalMaterial({color: 0x00ff00});
+        scoreObject = new THREE.Mesh(scoreObjectGeometry, scoreObjectMaterial);
+        scoreObject.name = "scoreText";
+    } );
 }
 
 function addBackground(){
