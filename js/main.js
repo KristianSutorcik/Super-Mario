@@ -1,24 +1,28 @@
-'use strict';
+"use strict";
 
 var scene, camera, renderer, controls;
-var backGround, plane, mario, cylinder, enemy, bonus;
+var background, ground, wall, mario, bonus, pipeTop, pipe, enemy, platform;
+var enemyList = [];
 
 var keyboard = new THREEx.KeyboardState();
 
-Physijs.scripts.worker = 'physijs_worker.js';
-Physijs.scripts.ammo = 'js/physijs/ammo.js';
+Physijs.scripts.worker = "physijs_worker.js";
+Physijs.scripts.ammo = "js/physijs/ammo.js";
 
 var isTouchingGround = true;
 var canMoveToRight = false;
 var canMoveToLeft = false;
 
-var speed = 30;
-var vector = new THREE.Vector3(0,0,0,);
+var vector = new THREE.Vector3(0,0,0);
 
-var enemySpeed = -30;
+var marioSpeed = 30;
+var marioMaxVelocity = 20;
+var marioJumpIntensity = 60;
+
+var enemySpeed = 30;
 
 var clock = new THREE.Clock(false);
-var textTime = "00:00:00";
+var textTime = "00:00";
 var score = 0;
 
 function init() {
@@ -26,82 +30,75 @@ function init() {
     scene.setGravity(new THREE.Vector3(0, -80, 0));
 
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 10000)
-    camera.position.set(0, 10, 100);
+    camera.position.set(0, 20, 90);
     camera.rotation.y = -0.5;
 
     renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // controls = new THREE.OrbitControls(camera, renderer.domElement);
+    //controls = new THREE.OrbitControls(camera, renderer.domElement);
 
     buildLevel(level1);
-
-    addObjects();
     addLights();
 
-    mario.addEventListener('collision', function(other_object, velocity, rotation, contactNormal) {
+    for(let i=0; i < enemyList.length; i++){
+        enemyList[i].setLinearVelocity(vector.setX(enemySpeed));
+    }
+
+    mario.addEventListener("collision", function(other_object, velocity, rotation, contactNormal) {
         if (contactNormal.y === -1) {
             isTouchingGround = true;
         }
 
-        if (other_object.name === 'enemy'){
-            if (contactNormal.y  <= -0.8){
+        if (other_object.name === "enemy"){
+            if (contactNormal.y  <= -0.7){
                 scene.remove(other_object);
                 score += 500;
-            } else if (window.confirm('Koniec hry! Chcete opakovať level?')){
-                window.open('index.html');
+            } else if (window.confirm("Koniec hry! Chcete opakovať level?")){
+                location.reload();
             }
         }
 
-        if (other_object.name === 'bonus') {
+        if (other_object.name === "bonus") {
             score += 100;
             scene.remove(other_object);
         }
 
-        if (other_object.name === 'flag') {
+        if (other_object.name === "finish") {
             clock.stop();
-            if (window.confirm('Gratulujem, level dokončený. Chcete hrať znova?')){
-                window.open('index.html');
+            if (window.confirm("Gratulujem, level dokončený. Chcete hrať znova?")){
+                location.reload();
             }
         }
     });
 
-    enemy.addEventListener('collision', function(other_object, velocity, rotation, contactNormal) {
-        if (other_object.name === 'cylinder') {
-            enemySpeed = enemySpeed * -1;
-        }
-    });
+    for(let i=0; i < enemyList.length; i++){
+        enemyList[i].addEventListener("collision", function(other_object, velocity, rotation, contactNormal) {
+            if (other_object.name === "pipe") {
+                enemyList[i].setLinearVelocity(new THREE.Vector3(enemyList[i].getLinearVelocity().x*-1),0,0);
+            }
+        });
+    }
 
     clock.start();
 }
 
 function render(){
-    update();
+    updateScene();
     scene.simulate();
     renderer.render( scene, camera );
     requestAnimationFrame( render );
 }
 
-function update() {
+function updateScene() {
 
-    if (clock.running){
-        var timeInSeconds = clock.getElapsedTime();
-        setTextTime(timeInSeconds);
+    for(let i=0; i < enemyList.length; i++){
+        console.log(enemyList[i].getLinearVelocity());
     }
 
-    var firstLine = "Čas: " + textTime;
-    var secondLine = "Skóre: " + score;
-    var thirdLine = "Level: 1";
-    document.getElementById("stats").innerHTML =
-        firstLine + "<br>" +
-        secondLine + "<br>" +
-        thirdLine;
-
-    if (mario.position.y < 4) {
-        mario.position.y = 4;
-        mario.__dirtyPosition = true;
-    }
+    updateLevelStats();
+    correctMariosPositionY();
 
     if ( keyboard.pressed("D" ) ){
         canMoveToRight = true;
@@ -110,23 +107,23 @@ function update() {
         canMoveToLeft = true;
     }
     if ( keyboard.pressed("W") && isTouchingGround){
-        mario.applyCentralImpulse(new THREE.Vector3(0,60,0,));
+        mario.applyCentralImpulse(new THREE.Vector3(0,marioJumpIntensity,0,));
         isTouchingGround = false;
     }
 
-    if (canMoveToRight && mario.getLinearVelocity().x < 20) {
+    if (canMoveToRight && mario.getLinearVelocity().x < marioMaxVelocity) {
         if (isTouchingGround) {
-            mario.setLinearVelocity(vector.setX(speed));
+            mario.setLinearVelocity(vector.setX(marioSpeed));
         } else {
-            mario.applyCentralImpulse(new THREE.Vector3(0.2,0,0,));
+            mario.applyCentralImpulse(vector.setX(0.2));
         }
     }
 
-    if (canMoveToLeft  && mario.getLinearVelocity().x > -20){
+    if (canMoveToLeft && mario.getLinearVelocity().x > -marioMaxVelocity){
         if (isTouchingGround) {
-            mario.setLinearVelocity(vector.setX(-speed));
+            mario.setLinearVelocity(vector.setX(-marioSpeed));
         } else {
-            mario.applyCentralImpulse(new THREE.Vector3(-0.2,0,0,));
+            mario.applyCentralImpulse(vector.setX(-0.2));
         }
     }
 
@@ -134,208 +131,41 @@ function update() {
     canMoveToLeft = false;
 
     camera.position.x = mario.position.x-20;
-
-    if (enemy.parent === scene){
-        enemy.setLinearVelocity(vector.setX(enemySpeed));
-    }
-
-}
-
-function addObjects(){
-
-    //background
-    var backgroundGeometry = new THREE.SphereGeometry(1000, 50, 50);
-    var backgroundTexture = new THREE.ImageUtils.loadTexture( 'texture/desert.jpg' );
-    var backgroundMaterial = new THREE.MeshBasicMaterial( {map: backgroundTexture,
-        transparent: true, side: THREE.BackSide} );
-    backGround = new THREE.Mesh( backgroundGeometry, backgroundMaterial );
-    backGround.position.set(0, 0, 0);
-    scene.add( backGround );
-
-    //invisible walls - left, top
-    var planeMaterial = Physijs.createMaterial(
-        new THREE.MeshBasicMaterial( {transparent: true, opacity: 0, side: THREE.BackSide} ),
-        0,
-        0
-    );
-
-    var planeGeometry = new THREE.PlaneGeometry( 8, 70, 1, 1);
-    plane = new Physijs.PlaneMesh(planeGeometry, planeMaterial, 0);
-    plane.position.set(-4.5, 35, 0);
-    plane.rotation.y = Math.PI / 2;
-    plane.castShadow = false;
-    plane.receiveShadow = false;
-    scene.add(plane);
-
-    var planeGeometry = new THREE.PlaneGeometry( 400, 8, 1, 1);
-    plane = new Physijs.PlaneMesh(planeGeometry, planeMaterial, 0);
-    plane.position.set(196, 70, 0);
-    plane.rotation.x = Math.PI / 2;
-    plane.castShadow = false;
-    plane.receiveShadow = false;
-    scene.add(plane);
-
-    //boxes - ground
-    var planeGeometry = new THREE.BoxGeometry(8, 8, 8);
-    var planeTexture = new THREE.ImageUtils.loadTexture('texture/box.jpg');
-    var planeMaterial = new Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {map: planeTexture } ),
-        5,
-        0
-    );
-    for (let i = 0; i < 50; i++){
-        plane = new Physijs.BoxMesh(planeGeometry, planeMaterial, 0);
-        plane.position.set(i*8, -4, 0);
-        scene.add(plane);
-    }
-    for (let i = 0; i < 5; i++){
-        plane = new Physijs.BoxMesh(planeGeometry, planeMaterial, 0);
-        plane.position.set(i*8+40, 30, 0);
-        scene.add(plane);
-    }
-
-    //bonus
-    var bonusGeometry = new THREE.BoxGeometry(8, 8, 8);
-    var bonusTexture = new THREE.ImageUtils.loadTexture('texture/bonus.png');
-    var bonusMaterial = new Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {map: bonusTexture } ),
-        0,
-        0
-    );
-    bonus = new Physijs.BoxMesh(bonusGeometry, bonusMaterial, 0);
-    bonus.position.set(150, 30, 0);
-    bonus.name = 'bonus';
-    scene.add(bonus);
-
-    //obstacle
-    var cylinderGeometry = new THREE.CylinderGeometry(4, 4, 16, 40);
-    var cylinderMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
-        10,
-        0
-    );
-    cylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
-    cylinder.position.set(20,8, 0);
-
-    var cylinderGeometry = new THREE.CylinderGeometry(6, 6, 2, 40);
-    var cylinderMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
-        10,
-        0
-    );
-    var smallcylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
-    smallcylinder.position.set(0,9,0);
-    cylinder.add(smallcylinder);
-    cylinder.name = 'cylinder';
-    scene.add(cylinder);
-
-    //obstacle
-    var cylinderGeometry = new THREE.CylinderGeometry(4, 4, 16, 40);
-    var cylinderMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
-        10,
-        0
-    );
-    cylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
-    cylinder.position.set(94,8, 0);
-
-    var cylinderGeometry = new THREE.CylinderGeometry(6, 6, 2, 40);
-    var cylinderMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
-        10,
-        0
-    );
-    var smallcylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
-    smallcylinder.position.set(0,9,0);
-    cylinder.add(smallcylinder);
-    cylinder.name = 'cylinder';
-    scene.add(cylinder);
-
-    //obstacle
-    var cylinderGeometry = new THREE.CylinderGeometry(4, 4, 16, 40);
-    var cylinderMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
-        10,
-        0
-    );
-    cylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
-    cylinder.position.set(200,8, 0);
-
-    var cylinderGeometry = new THREE.CylinderGeometry(6, 6, 2, 40);
-    var cylinderMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
-        10,
-        0
-    );
-    var smallcylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
-    smallcylinder.position.set(0,9,0);
-    cylinder.add(smallcylinder);
-    cylinder.name = 'cylinder';
-    scene.add(cylinder);
-
-    //obstacle
-    var cylinderGeometry = new THREE.CylinderGeometry(4, 4, 16, 40);
-    var cylinderMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
-        10,
-        0
-    );
-    cylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
-    cylinder.position.set(300,8, 0);
-
-    var cylinderGeometry = new THREE.CylinderGeometry(6, 6, 2, 40);
-    var cylinderMaterial = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {color: 'rgb(0,255,0)'} ),
-        10,
-        0
-    );
-    var smallcylinder = new Physijs.CylinderMesh(cylinderGeometry, cylinderMaterial, 0);
-    smallcylinder.position.set(0,9,0);
-    cylinder.add(smallcylinder);
-    cylinder.name = 'cylinder';
-    scene.add(cylinder);
-
-    // //text - finish
-    // var loader = new THREE.FontLoader();
-    // loader.load( 'https://threejs.org/examples/fonts/droid/droid_sans_regular.typeface.json', function ( font ) {
-    //     var geometry = new THREE.TextGeometry( 'Koniec levelu', {
-    //         font: font,
-    //         size: 5,
-    //         height: 0.5,
-    //         curveSegments: 12,
-    //         bevelThickness: 1,
-    //         bevelSize: 1,
-    //         bevelEnabled: true
-    //     } );
-    //     geometry.center();
-    //     var material = new THREE.MeshNormalMaterial({color: 'rgb(255,255,255)'});
-    //     var mesh = new THREE.Mesh( geometry, material );
-    //     mesh.position.set(350,30,0);
-    //     scene.add( mesh );
-    // } );
-
 }
 
 function addLights() {
-
-    var directionLight = new THREE.DirectionalLight(0xffffff, 1);
+    let directionLight = new THREE.DirectionalLight(0xffffff, 1);
     directionLight.position.set(0,50,50);
     directionLight.castShadow = false;
     scene.add(directionLight);
 }
 
-function setTextTime(timeInSeconds){
-    timeInSeconds = Number(timeInSeconds);
-    var m = Math.floor(timeInSeconds % 3600 / 60);
-    var s = Math.floor(timeInSeconds % 3600 % 60);
+function correctMariosPositionY(){
+    if (mario.position.y < 4) {
+        mario.position.y = 4;
+        mario.__dirtyPosition = true;
+    }
+}
 
-    if (m < 10) {
-        m = "0"+m;
+function updateLevelStats(){
+    if (clock.running){
+        let timeInSeconds = clock.getElapsedTime();
+        let m = Math.floor(timeInSeconds % 3600 / 60);
+        let s = Math.floor(timeInSeconds % 3600 % 60);
+
+        if (m < 10) m = "0"+m;
+
+        if (s < 10) s = "0"+s;
+        textTime = m + ":" + s;
     }
-    if (s < 10) {
-        s = "0"+s;
-    }
-    textTime = m + ":" + s;
+
+    let firstLine = "Čas: " + textTime;
+    let secondLine = "Skóre: " + score;
+    let thirdLine = "Level: 1";
+    document.getElementById("stats").innerHTML =
+        firstLine + "<br>" +
+        secondLine + "<br>" +
+        thirdLine;
 }
 
 init();

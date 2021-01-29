@@ -3,25 +3,25 @@
     top: 10px;
     width: 100%;
     text-align: center;
-    font-size: 1vw;
-    z-index: 100;
-    display:block;
+    font-family: Verdana;
+    font-size: 2em;
+    color: yellow;
 }
 #howToPlay{
     position: absolute;
-    bottom: 5vw;
+    bottom: 100px;
     width: 100%;
     text-align: center;
-    font-size: 1vw;
-    z-index: 100;
-    display:block;
+    font-family: Verdana;
+    font-size: 2em;
+    color: yellow;
 }
 #info {
     position: absolute;
     bottom: 10px;
     width: 100%;
     text-align: center;
-    font-size: 1vw;
-    z-index: 100;
-    display:block;
+    font-family: Verdana;
+    font-size: 2em;
+    color: yellow;
 }
