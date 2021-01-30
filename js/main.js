@@ -19,6 +19,7 @@ var vector;
 var marioSpeed = 30;
 var marioMaxVelocity = 20;
 var marioJumpIntensity = 60;
+var marioRotationY = 0;
 
 var enemySpeed = 30;
 
@@ -41,7 +42,7 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    controls = controls = new THREE.OrbitControls(camera, renderer.domElement);
+    // controls = controls = new THREE.OrbitControls(camera, renderer.domElement);
 
     resetGUI();
 
@@ -50,7 +51,6 @@ function init() {
     addLights();
 
     addEventListeners();
-
 }
 
 function render(){
@@ -65,8 +65,8 @@ function updateScene() {
     movementControls();
     movement();
     correctMariosPositionY();
-    // camera.position.x = mario.position.x-20;
-    controls.update();
+    camera.position.x = mario.position.x-20;
+    // controls.update();
 }
 
 function addEventListeners(){
@@ -125,11 +125,14 @@ function addLights() {
     directionLight2.position.set(-50,50,50);
     directionLight2.castShadow = false;
     scene.add(directionLight2);
+
+    // let ambientLight = new THREE.AmbientLight;
+    // scene.add(ambientLight);
 }
 
 function correctMariosPositionY(){
-    if (mario.position.y < 4) {
-        mario.position.y = 4;
+    if (mario.position.y < 5) {
+        mario.position.y = 5;
         mario.__dirtyPosition = true;
     }
 }
@@ -137,9 +140,11 @@ function correctMariosPositionY(){
 function movementControls(){
     if ( keyboard.pressed("D" ) ){
         canMoveToRight = true;
+        marioRotationY = 0;
     }
     if ( keyboard.pressed("A" ) ){
         canMoveToLeft = true;
+        marioRotationY = Math.PI;
     }
     if ( keyboard.pressed("W") && isTouchingGround){
         mario.applyCentralImpulse(new THREE.Vector3(0,marioJumpIntensity,0));
@@ -148,6 +153,7 @@ function movementControls(){
     if ( keyboard.pressed("R") ){
         nextLevel(level);
     }
+    mario.rotation.y = marioRotationY;
 }
 
 function movement(){

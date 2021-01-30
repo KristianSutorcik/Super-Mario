@@ -22,7 +22,7 @@ var level2 = [
     ["bonus", 150, 30],
     ["bonus", 150, 60],
     ["enemy", 50],
-    ["enemy", 130],
+    ["enemy", 140],
     ["platform", 30, 35, 48]
 ];
 
