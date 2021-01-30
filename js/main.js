@@ -1,7 +1,8 @@
 "use strict";
 
 var scene, camera, renderer, controls;
-var background, ground, wall, mario, bonus, pipeTop, pipe, enemy, platform, scoreObject;
+var background, ground, wall, mario, bonus, pipeTop, pipe, enemy, platform, scoreObject, mast, flag;
+var objectList = [];
 var enemyList = [];
 
 var keyboard = new THREEx.KeyboardState();
@@ -9,11 +10,11 @@ var keyboard = new THREEx.KeyboardState();
 Physijs.scripts.worker = "physijs_worker.js";
 Physijs.scripts.ammo = "js/physijs/ammo.js";
 
-var isTouchingGround = true;
-var canMoveToRight = false;
-var canMoveToLeft = false;
+var isTouchingGround;
+var canMoveToRight;
+var canMoveToLeft;
 
-var vector = new THREE.Vector3(0,0,0);
+var vector;
 
 var marioSpeed = 30;
 var marioMaxVelocity = 20;
@@ -21,15 +22,18 @@ var marioJumpIntensity = 60;
 
 var enemySpeed = 30;
 
-var clock = new THREE.Clock(false);
-var textTime = "00:00";
-var score = 0;
+var clock;
+var textTime;
+var score;
+
+var level = level1;
 
 function init() {
+
     scene = new Physijs.Scene();
     scene.setGravity(new THREE.Vector3(0, -80, 0));
 
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 10000)
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 10000);
     camera.position.set(0, 20, 90);
     camera.rotation.y = -0.5;
 
@@ -37,19 +41,16 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    //controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-    buildLevel(level1);
+    resetGUI();
+
+    buildLevel(level);
 
     addLights();
 
     addEventListeners();
 
-    enemyList.forEach(function (e){
-        e.setLinearVelocity(vector.setX(enemySpeed));
-    });
-
-    clock.start();
 }
 
 function render(){
@@ -64,7 +65,8 @@ function updateScene() {
     movementControls();
     movement();
     correctMariosPositionY();
-    camera.position.x = mario.position.x-20;
+    // camera.position.x = mario.position.x-20;
+    controls.update();
 }
 
 function addEventListeners(){
@@ -80,8 +82,8 @@ function addEventListeners(){
                 score += 100;
                 scoreObject.position.set(mario.position.x, mario.position.y+5, 0);
                 scene.add(scoreObject);
-            } else if (window.confirm("Koniec hry! Chcete opakovať level?")){
-                location.reload();
+            } else if (window.confirm("Koniec hry!\nChcete opakovať level?")){
+                nextLevel(level);
             }
         }
 
@@ -89,12 +91,16 @@ function addEventListeners(){
             score += 100;
             scene.remove(other_object);
             scoreObject.position.set(mario.position.x, mario.position.y+5, 0);
+            objectList.push(scoreObject);
             scene.add(scoreObject);
         }
 
         if (other_object.name === "finish") {
             clock.stop();
-            if (window.confirm("Gratulujem, level dokončený. Chcete hrať znova?")){
+            if (window.confirm("Gratulujem, level dokončený.\nChcete pokračovať na ďalší level?")){
+                level = level[level.length-1][1];
+                nextLevel(level);
+            } else {
                 location.reload();
             }
         }
@@ -139,8 +145,8 @@ function movementControls(){
         mario.applyCentralImpulse(new THREE.Vector3(0,marioJumpIntensity,0));
         isTouchingGround = false;
     }
-    if ( keyboard.pressed("R" ) ){
-        location.reload();
+    if ( keyboard.pressed("R") ){
+        nextLevel(level);
     }
 }
 
@@ -177,12 +183,42 @@ function updateLevelStats(){
         textTime = m + ":" + s;
     }
 
-    let levelText = "Level <br> 1";
-    let scoreText = "Skóre " + "<br>" + score;
-    let timeText = "Čas " + "<br>" + textTime;
+    let levelText = "Level<br>" + level[0][1];
+    let scoreText = "Skóre<br>" + score;
+    let timeText = "Čas<br>" + textTime;
     document.getElementById("level").innerHTML = levelText;
     document.getElementById("score").innerHTML = scoreText;
     document.getElementById("time").innerHTML = timeText;
+}
+
+function nextLevel(level){
+    objectList.forEach(function (o){
+        scene.remove(o);
+    });
+
+    resetGUI();
+
+    buildLevel(level);
+
+    enemyList.forEach(function (e){
+        e.setLinearVelocity(vector.setX(enemySpeed));
+    });
+
+    addEventListeners();
+}
+
+function resetGUI(){
+    isTouchingGround = false;
+    canMoveToRight = true;
+    canMoveToLeft = true;
+
+    vector = new THREE.Vector3(0,0,0);
+
+    clock = new THREE.Clock(false);
+    textTime = "00:00";
+    score = 0;
+
+    clock.start();
 }
 
 init();
