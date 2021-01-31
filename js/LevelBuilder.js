@@ -40,17 +40,13 @@ function buildLevel(level){
                 break;
         }
     }
-
-    enemyList.forEach(function (e){
-        e.setLinearVelocity(vector.setX(enemySpeed));
-    });
 }
 
 function createGeometriesAndMaterials(){
     bonusGeometry = new THREE.BoxGeometry(8, 8, 8);
     bonusTexture = new THREE.ImageUtils.loadTexture("texture/bonus.png");
     bonusMaterial = new Physijs.createMaterial(
-        new THREE.MeshLambertMaterial( {map: bonusTexture } ), 0, 0);
+        new THREE.MeshLambertMaterial( {map: bonusTexture } ), groundFriction, 0);
 
     pipeMaterial = Physijs.createMaterial(
         new THREE.MeshLambertMaterial( {color: "rgb(0,255,0)"} ), groundFriction, 0);
@@ -265,7 +261,6 @@ function addEnemy(x){
     objectList.push(enemy);
     scene.add(enemy);
     enemy.setAngularFactor(new THREE.Vector3(0, 0, 0));
-    enemy.setLinearVelocity(vector.setX(enemySpeed));
 }
 
 function addPlatform(x, y, length){
@@ -278,5 +273,4 @@ function addPlatform(x, y, length){
     platformTexture.wrapS = THREE.RepeatWrapping;
     platformTexture.wrapT = THREE.RepeatWrapping;
     platformTexture.repeat.set(length/8,1);
-
 }

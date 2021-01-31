@@ -1,6 +1,5 @@
 #level {
     position: absolute;
-
     top: 10px;
     left: 300px;
     display: block;
@@ -39,7 +38,7 @@
 
 #howToPlay{
     position: absolute;
-    bottom: 100px;
+    bottom: 130px;
     width: 100%;
     text-align: center;
     font-family: Verdana;

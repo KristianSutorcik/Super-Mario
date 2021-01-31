@@ -1,18 +1,17 @@
 "use strict";
 
+Physijs.scripts.worker = "physijs_worker.js";
+Physijs.scripts.ammo = "js/physijs/ammo.js";
+
 var scene, camera, renderer, controls;
 var background, ground, wall, mario, bonus, pipeTop, pipe, enemy, platform, scoreObject, mast, flag;
 var objectList = [];
 var enemyList = [];
 
 var keyboard = new THREEx.KeyboardState();
-
-Physijs.scripts.worker = "physijs_worker.js";
-Physijs.scripts.ammo = "js/physijs/ammo.js";
-
-var isTouchingGround;
-var canMoveToRight;
-var canMoveToLeft;
+var clock = new THREE.Clock(false);
+var textTime;
+var score;
 
 var vector;
 
@@ -20,12 +19,11 @@ var marioSpeed = 30;
 var marioMaxVelocity = 20;
 var marioJumpIntensity = 60;
 var marioRotationY = 0;
+var isTouchingGround;
+var marioCanMoveRight;
+var marioCanMoveLeft;
 
 var enemySpeed = 30;
-
-var clock;
-var textTime;
-var score;
 
 var level = level1;
 
@@ -65,8 +63,15 @@ function updateScene() {
     movementControls();
     movement();
     correctMariosPositionY();
+
     camera.position.x = mario.position.x-20;
+
+    enemyList.forEach(function (e){
+        e.setLinearVelocity(vector.setX(enemySpeed));
+    });
+
     // controls.update();
+    console.log(mario)
 }
 
 function addEventListeners(){
@@ -74,34 +79,35 @@ function addEventListeners(){
         if (contactNormal.y === -1) {
             isTouchingGround = true;
             scene.remove( scoreObject );
+            console.log(other_object);
         }
 
         if (other_object.name === "enemy"){
             if (contactNormal.y <= -0.7){
-                scene.remove(other_object);
-                score += 100;
-                scoreObject.position.set(mario.position.x, mario.position.y+5, 0);
-                scene.add(scoreObject);
-            } else if (window.confirm("Koniec hry!\nChcete opakovať level?")){
+                for (let i = 0; i < enemyList.length; i++){
+                    if(enemyList[i] === other_object) enemyList.splice(i, 1);
+                }
+                showScoreObject(other_object);
+            } else if (window.confirm("Koniec hry!")){
+                nextLevel(level);
+            } else {
                 nextLevel(level);
             }
         }
 
         if (other_object.name === "bonus") {
-            score += 100;
-            scene.remove(other_object);
-            scoreObject.position.set(mario.position.x, mario.position.y+5, 0);
-            objectList.push(scoreObject);
-            scene.add(scoreObject);
+            showScoreObject(other_object);
         }
 
         if (other_object.name === "finish") {
             clock.stop();
-            if (window.confirm("Gratulujem, level dokončený.\nChcete pokračovať na ďalší level?")){
+            if (window.confirm("Gratulujem, Level " + level[0][1] + " dokončený." +
+                            "\nSkóre: "+ score + "    Čas: " + textTime +
+                            "\n\nChcete pokračovať na ďalší level?")){
                 level = level[level.length-1][1];
                 nextLevel(level);
             } else {
-                location.reload();
+                nextLevel(level);
             }
         }
     });
@@ -109,7 +115,7 @@ function addEventListeners(){
     for(let i=0; i < enemyList.length; i++){
         enemyList[i].addEventListener("collision", function(other_object, velocity, rotation, contactNormal) {
             if (other_object.name === "pipe") {
-                enemyList[i].setLinearVelocity(new THREE.Vector3(enemyList[i].getLinearVelocity().x*-1),0,0);
+                enemySpeed = enemySpeed * -1;
             }
         });
     }
@@ -139,11 +145,11 @@ function correctMariosPositionY(){
 
 function movementControls(){
     if ( keyboard.pressed("D" ) ){
-        canMoveToRight = true;
+        marioCanMoveRight = true;
         marioRotationY = 0;
     }
     if ( keyboard.pressed("A" ) ){
-        canMoveToLeft = true;
+        marioCanMoveLeft = true;
         marioRotationY = Math.PI;
     }
     if ( keyboard.pressed("W") && isTouchingGround){
@@ -157,7 +163,7 @@ function movementControls(){
 }
 
 function movement(){
-    if (canMoveToRight && mario.getLinearVelocity().x < marioMaxVelocity) {
+    if (marioCanMoveRight && mario.getLinearVelocity().x < marioMaxVelocity) {
         if (isTouchingGround) {
             mario.setLinearVelocity(vector.setX(marioSpeed));
         } else {
@@ -165,7 +171,7 @@ function movement(){
         }
     }
 
-    if (canMoveToLeft && mario.getLinearVelocity().x > -marioMaxVelocity){
+    if (marioCanMoveLeft && mario.getLinearVelocity().x > -marioMaxVelocity){
         if (isTouchingGround) {
             mario.setLinearVelocity(vector.setX(-marioSpeed));
         } else {
@@ -173,8 +179,8 @@ function movement(){
         }
     }
 
-    canMoveToRight = false;
-    canMoveToLeft = false;
+    marioCanMoveRight = false;
+    marioCanMoveLeft = false;
 }
 
 function updateLevelStats(){
@@ -184,46 +190,43 @@ function updateLevelStats(){
         let s = Math.floor(timeInSeconds % 3600 % 60);
 
         if (m < 10) m = "0"+m;
-
         if (s < 10) s = "0"+s;
         textTime = m + ":" + s;
     }
-
     let levelText = "Level<br>" + level[0][1];
     let scoreText = "Skóre<br>" + score;
     let timeText = "Čas<br>" + textTime;
+
     document.getElementById("level").innerHTML = levelText;
     document.getElementById("score").innerHTML = scoreText;
     document.getElementById("time").innerHTML = timeText;
+}
+
+function showScoreObject(other_object){
+    scene.remove(other_object);
+    score += 100;
+    scoreObject.position.set(mario.position.x, mario.position.y+5, 0);
+    objectList.push(scoreObject);
+    scene.add(scoreObject);
 }
 
 function nextLevel(level){
     objectList.forEach(function (o){
         scene.remove(o);
     });
-
     resetGUI();
-
     buildLevel(level);
-
-    enemyList.forEach(function (e){
-        e.setLinearVelocity(vector.setX(enemySpeed));
-    });
-
     addEventListeners();
 }
 
 function resetGUI(){
     isTouchingGround = false;
-    canMoveToRight = true;
-    canMoveToLeft = true;
-
+    marioCanMoveRight = false;
+    marioCanMoveLeft = false;
+    marioRotationY = 0;
     vector = new THREE.Vector3(0,0,0);
-
-    clock = new THREE.Clock(false);
     textTime = "00:00";
     score = 0;
-
     clock.start();
 }
 
