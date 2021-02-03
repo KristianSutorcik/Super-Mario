@@ -7,7 +7,7 @@ var level1 = [
     ["pipe", 120, 16],
     ["enemy", 50],
     ["bonus", 150, 30],
-    ["platform", 28, 35, 48]
+    ["platform", 28, 33, 48]
 ];
 
 var level2 = [
@@ -17,13 +17,13 @@ var level2 = [
     ["pipe", 20, 16],
     ["pipe", 100, 36],
     ["pipe", 120, 16],
-    ["pipe", 200, 16],
+    ["pipe", 220, 16],
     ["pipe", 250, 16],
     ["bonus", 150, 30],
     ["bonus", 150, 60],
     ["enemy", 60],
     ["enemy", 160],
-    ["platform", 30, 35, 48]
+    ["platform", 30, 33, 48]
 ];
 
 var level3 = [

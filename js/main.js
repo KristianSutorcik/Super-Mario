@@ -43,12 +43,9 @@ function init() {
     // controls = controls = new THREE.OrbitControls(camera, renderer.domElement);
 
     resetGUI();
-
     buildLevel(level);
-
-    addLights();
-
     addEventListeners();
+    addLights();
 }
 
 function render(){
@@ -217,12 +214,13 @@ function nextLevel(level){
     resetGUI();
     buildLevel(level);
     addEventListeners();
+    keyboard = new THREEx.KeyboardState();
 }
 
 function resetGUI(){
-    isTouchingGround = false;
-    marioCanMoveRight = false;
-    marioCanMoveLeft = false;
+    // isTouchingGround = true;
+    // marioCanMoveRight = false;
+    // marioCanMoveLeft = false;
     marioRotationY = 0;
     vector = new THREE.Vector3(0,0,0);
     textTime = "00:00";
